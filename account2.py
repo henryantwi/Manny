@@ -48,6 +48,7 @@ class Account:
         self.phone_number = phone_number
         self.user_name = user_name
         self.password = password
+        self.postgres_db_password = os.getenv("POSTGRESQL_PASSWORD")
 
     def open_account(
         self,
@@ -118,14 +119,133 @@ class Account:
                 cur.close()
             if conn:
                 conn.close()
+                
+    def sign_in(self, user_name, password) -> bool:
+        
+        # Database Settings
+        postgres_db_password = os.getenv("POSTGRESQL_PASSWORD")
+
+        conn = None
+        cur = None
+        try:
+            # Connect to the PostgreSQL database
+            conn = psycopg2.connect(
+                host="localhost",
+                dbname="Banking",
+                user="postgres",
+                password=postgres_db_password,
+                port=5432,
+            )
+            cur = conn.cursor()
+
+            # SQL query to retrieve password hash
+            select_script = """
+            SELECT password
+            FROM UserDetails
+            WHERE user_name = %s;
+            """
+            
+            cur.execute(select_script, (user_name,))
+            stored_password = cur.fetchone()
+
+            if stored_password and bcrypt.checkpw(password.encode('utf-8'), stored_password[0].encode('utf-8')):
+                print("Signed In")
+                return True
+            else:
+                print("Unable to Sign In")
+                return False
+
+        except Exception as error:
+            print(f"Error: {error}")
+            return False
+
+        finally:
+            # Close the cursor and connection
+            if cur:
+                cur.close()
+            if conn:
+                conn.close() 
+                
+                
+    def deposit(self, user_name: str, password: str, amount: float) -> str:
+        user_is_authenticated = self.sign_in(user_name, password)
+        
+        if user_is_authenticated:
+            
+            conn = None
+            cur = None
+           
+            try:
+                conn = psycopg2.connect(
+                    host="localhost",
+                    dbname="Banking",
+                    user="postgres",
+                    password=self.postgres_db_password,
+                    port=5432,
+                )
+            
+                cur = conn.cursor()
+                selet_balance_script = """
+                    SELECT balance
+                    FROM userdetails
+                    WHERE user_name = %s;
+                    """
+                insert_values = (user_name,)
+                cur.execute(selet_balance_script, insert_values)
+                current_balance = float(cur.fetchone()[0])
+                
+                update_script = """
+                    UPDATE userdetails
+                    SET balance = %s
+                    WHERE user_name = %s;
+                    """
+                updated_balance = amount + current_balance
+                insert_values = (updated_balance, user_name)
+                
+                cur.execute(update_script, insert_values)
+             
+                conn.commit()
+                
+            except Exception as error:
+                print(f"Error: {error}")
+                
+            finally:
+                if cur:
+                    cur.close()
+                if conn:
+                    conn.close()
+            
+            
+            return f"{amount} was added to user account!"
+                
+        return "Wrong credentials were provided hence your balance can't be updated!"        
+                
+                
+                
+                
+                
+                
 
 
-name: str = input("Enter your name: ")
-age: int = int(input("Enter your age: "))
-address = input("Address: ")
-phone_number = input("Enter phone number: ")
+# name: str = input("Enter your name: ")
+# age: int = int(input("Enter your age: "))
+# address = input("Address: ")
+# phone_number = input("Enter phone number: ")
+# user_name = input("Enter your username: ")
+# password = pin.pwinput("Enter your password: ", "🍌")
+
+# mannys_account = Account()
+# mannys_account.open_account(name, age, address, phone_number, user_name, password)
+
+
+
+
+
+
 user_name = input("Enter your username: ")
-password = pin.pwinput("Enter your password: ", "*")
+password = pin.pwinput("Enter your password: ", "🍌")
+balance = float(input("Enter amount: "))
 
 mannys_account = Account()
-mannys_account.open_account(name, age, address, phone_number, user_name, password)
+
+print(mannys_account.deposit(user_name, password, balance))
