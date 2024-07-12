@@ -119,9 +119,9 @@ class Account:
                 cur.close()
             if conn:
                 conn.close()
-                
+
     def sign_in(self, user_name, password) -> bool:
-        
+
         # Database Settings
         postgres_db_password = os.getenv("POSTGRESQL_PASSWORD")
 
@@ -144,11 +144,13 @@ class Account:
             FROM UserDetails
             WHERE user_name = %s;
             """
-            
+
             cur.execute(select_script, (user_name,))
             stored_password = cur.fetchone()
 
-            if stored_password and bcrypt.checkpw(password.encode('utf-8'), stored_password[0].encode('utf-8')):
+            if stored_password and bcrypt.checkpw(
+                password.encode("utf-8"), stored_password[0].encode("utf-8")
+            ):
                 print("Signed In")
                 return True
             else:
@@ -164,17 +166,17 @@ class Account:
             if cur:
                 cur.close()
             if conn:
-                conn.close() 
-                
-                
+                conn.close()
+
     def deposit(self, user_name: str, password: str, amount: float) -> str:
         user_is_authenticated = self.sign_in(user_name, password)
-        
+
         if user_is_authenticated:
-            
+
             conn = None
             cur = None
-           
+            updated_balance = None
+
             try:
                 conn = psycopg2.connect(
                     host="localhost",
@@ -183,7 +185,7 @@ class Account:
                     password=self.postgres_db_password,
                     port=5432,
                 )
-            
+
                 cur = conn.cursor()
                 selet_balance_script = """
                     SELECT balance
@@ -193,7 +195,7 @@ class Account:
                 insert_values = (user_name,)
                 cur.execute(selet_balance_script, insert_values)
                 current_balance = float(cur.fetchone()[0])
-                
+
                 update_script = """
                     UPDATE userdetails
                     SET balance = %s
@@ -201,30 +203,25 @@ class Account:
                     """
                 updated_balance = amount + current_balance
                 insert_values = (updated_balance, user_name)
-                
+
                 cur.execute(update_script, insert_values)
-             
+
                 conn.commit()
-                
+
             except Exception as error:
                 print(f"Error: {error}")
-                
+
             finally:
                 if cur:
                     cur.close()
                 if conn:
                     conn.close()
-            
-            
-            return f"{amount} was added to user account!"
-                
-        return "Wrong credentials were provided hence your balance can't be updated!"        
-                
-                
-                
-                
-                
-                
+                return f"{amount} was added to user account!\nYour current balance is {updated_balance}"
+
+        return "Wrong credentials were provided hence your balance can't be updated!"
+
+    def withdraw(self, amount: float) -> str:
+        pass
 
 
 # name: str = input("Enter your name: ")
@@ -238,12 +235,8 @@ class Account:
 # mannys_account.open_account(name, age, address, phone_number, user_name, password)
 
 
-
-
-
-
 user_name = input("Enter your username: ")
-password = pin.pwinput("Enter your password: ", "🍌")
+password = pin.pwinput("Enter your password: ", "🔑")
 balance = float(input("Enter amount: "))
 
 mannys_account = Account()
