@@ -7,19 +7,19 @@ import psycopg2
 import pwinput as pin
 
 # SQL CODE:
-"""
-CREATE TABLE IF NOT EXISTS UserDetails (
-    acc_no SERIAL PRIMARY KEY,
-    name VARCHAR(100),
-    age INT,
-    address TEXT,
-    balance DECIMAL(10, 2),
-    date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    phone_number VARCHAR(15),
-    user_name VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL
-);
-"""
+
+# CREATE TABLE IF NOT EXISTS UserDetails (
+#     acc_no SERIAL PRIMARY KEY,
+#     name VARCHAR(100),
+#     age INT,
+#     address TEXT,
+#     balance DECIMAL(10, 2),
+#     date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+#     phone_number VARCHAR(15),
+#     user_name VARCHAR(50) UNIQUE NOT NULL,
+#     password VARCHAR(255) NOT NULL
+# );
+#
 
 
 class Account:
@@ -140,9 +140,9 @@ class Account:
 
             # SQL query to retrieve password hash
             select_script = """
-            SELECT password
-            FROM UserDetails
-            WHERE user_name = %s;
+                SELECT password
+                FROM UserDetails
+                WHERE user_name = %s;
             """
 
             cur.execute(select_script, (user_name,))
@@ -236,7 +236,7 @@ class Account:
 
 
 user_name = input("Enter your username: ")
-password = pin.pwinput("Enter your password: ", "🔑")
+password = pin.pwinput("Enter your password: ", ".")
 balance = float(input("Enter amount: "))
 
 mannys_account = Account()
