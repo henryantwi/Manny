@@ -50,7 +50,39 @@ class Account:
         self.password = password
         self.postgres_db_password = os.getenv("POSTGRESQL_PASSWORD")
 
-    def open_account(
+    def home_page(self) -> None:
+        print("Welcome to the Banking System")
+        print("1. Sign Up")
+        print("2. Sign In")
+        print("3. Exit")
+        
+        choice = int(input("Enter your choice: "))
+        
+        if choice == 1:
+            name = input("Enter your name: ") 
+            age = int(input("Enter your age: "))
+            address = input("Enter your address: ")
+            phone_number = input("Enter your phone number: ")
+            user_name = input("Enter your username: ")
+            password = pin.pwinput("Enter your password: ", "🍌")
+              
+            self.sign_up(name, age, address, phone_number, user_name, password)
+            
+        elif choice == 2:
+            user_name = input("Enter your username: ")
+            password = pin.pwinput("Enter your password: ", "🔑")
+            
+            self.sign_in(user_name, password)
+            
+        elif choice == 3:
+            print("Goodbye!")
+            exit()
+        
+        else:
+            print("Invalid Choice!")
+            exit()
+
+    def sign_up(
         self,
         name: str,
         age: int,
@@ -74,7 +106,7 @@ class Account:
         postgres_db_password = os.getenv("POSTGRESQL_PASSWORD")
 
         conn = None
-        cur = None
+        cur = None  
         try:
             # Connect to the PostgreSQL database
             conn = psycopg2.connect(
@@ -120,10 +152,13 @@ class Account:
             if conn:
                 conn.close()
 
-    def sign_in(self, user_name, password) -> bool:
+    def sign_in(self, user_name, password) -> None:
+        self.user_name = user_name
+        self.password = password
 
         # Database Settings
         postgres_db_password = os.getenv("POSTGRESQL_PASSWORD")
+        self.user_name = user_name
 
         conn = None
         cur = None
@@ -140,18 +175,51 @@ class Account:
 
             # SQL query to retrieve password hash
             select_script = """
-                SELECT password
+                SELECT password, acc_no 
                 FROM UserDetails
                 WHERE user_name = %s;
             """
 
             cur.execute(select_script, (user_name,))
-            stored_password = cur.fetchone()
+            stored_password = cur.fetchall()[0]
+            hmm = cur.fetchone()
+            print(hmm)
+            
+            self.account_number = stored_password[1]
+            print(stored_password)
 
             if stored_password and bcrypt.checkpw(
                 password.encode("utf-8"), stored_password[0].encode("utf-8")
             ):
-                print("Signed In")
+                print("Signed In!")
+                print(f"Welcome {user_name}")
+                print(f"Your Account Number is: 00000130010{self.account_number}")
+                
+                print("1. Deposit")
+                print("2. Withdraw")
+                print("3. Check Balance")
+                print("4. Exit")
+                
+                choice = int(input("Enter your choice: "))
+                
+                if choice == 1:
+                    amount = float(input("Enter amount: "))
+                    self.deposit(amount)
+                    
+                elif choice == 2:
+                    amount = float(input("Enter amount: ")) 
+                    self.withdraw(amount)
+                    
+                elif choice == 3:
+                    self.check_balance()
+                    
+                elif choice == 4:
+                    print("Goodbye!")
+                    exit()
+                else:
+                    print("Invalid Choice!")
+                    exit()
+                
                 return True
             else:
                 print("Unable to Sign In")
@@ -168,8 +236,8 @@ class Account:
             if conn:
                 conn.close()
 
-    def deposit(self, user_name: str, password: str, amount: float) -> str:
-        user_is_authenticated = self.sign_in(user_name, password)
+    def deposit(self, amount: float) -> str:
+        user_is_authenticated = self.sign_in(self.user_name, self.password)
 
         if user_is_authenticated:
 
@@ -192,7 +260,7 @@ class Account:
                     FROM userdetails
                     WHERE user_name = %s;
                     """
-                insert_values = (user_name,)
+                insert_values = (self.user_name,)
                 cur.execute(selet_balance_script, insert_values)
                 current_balance = float(cur.fetchone()[0])
 
@@ -202,7 +270,7 @@ class Account:
                     WHERE user_name = %s;
                     """
                 updated_balance = amount + current_balance
-                insert_values = (updated_balance, user_name)
+                insert_values = (updated_balance, self.user_name)
 
                 cur.execute(update_script, insert_values)
 
@@ -223,22 +291,30 @@ class Account:
     def withdraw(self, amount: float) -> str:
         pass
 
-
-# name: str = input("Enter your name: ")
-# age: int = int(input("Enter your age: "))
-# address = input("Address: ")
-# phone_number = input("Enter phone number: ")
-# user_name = input("Enter your username: ")
-# password = pin.pwinput("Enter your password: ", "🍌")
-
-# mannys_account = Account()
-# mannys_account.open_account(name, age, address, phone_number, user_name, password)
-
-
-user_name = input("Enter your username: ")
-password = pin.pwinput("Enter your password: ", ".")
-balance = float(input("Enter amount: "))
+    def check_balance(self) -> str:
+        conn = psycopg2.connect(
+            host="localhost",
+            dbname="Banking",
+            user="postgres",
+            password=self.postgres_db_password,
+            port=5432,
+        )
+    
+        cur = conn.cursor()
+    
+        select_balance_script = """
+            SELECT balance FROM userdetails WHERE user_name = %s;
+            """
+    
+        cur.execute(select_balance_script, (self.user_name,))
+    
+        current_balance = cur.fetchone()[0]
+    
+        cur.close()
+        conn.close()
+    
+        return f"Your current balance is: {current_balance}"
+    
 
 mannys_account = Account()
-
-print(mannys_account.deposit(user_name, password, balance))
+mannys_account.home_page()
