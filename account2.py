@@ -67,6 +67,7 @@ class Account:
             password = pin.pwinput("Enter your password: ", "🍌")
               
             self.sign_up(name, age, address, phone_number, user_name, password)
+            self.home_page()
             
         elif choice == 2:
             user_name = input("Enter your username: ")
